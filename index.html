@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flood Monitoring</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --danger: #e74c3c;
+            --warning: #f1c40f;
+            --safe: #2ecc71;
+            --bg: #f4f7f6;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; }
+        
+        header { 
+            background: var(--primary); color: white; padding: 1.5rem; 
+            border-radius: 8px; display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+
+        .drainage-container {
+            position: relative; height: 200px; width: 100%; 
+            background: #eee; border: 4px solid #7f8c8d; 
+            border-top: none; border-radius: 0 0 50px 50px; overflow: hidden;
+        }
+        .water-level {
+            position: absolute; bottom: 0; width: 100%;
+            background: rgba(52, 152, 219, 0.7);
+            transition: height 1s ease-in-out, background 0.5s;
+        }
+        .sensor-tag {
+            position: absolute; top: 10px; right: 10px;
+            padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 0.8rem;
+        }
+
+        .btn { 
+            padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; 
+            font-weight: bold; margin: 5px; transition: 0.3s;
+        }
+        .btn-test { background: var(--accent); color: white; }
+        .btn-reset { background: #95a5a6; color: white; }
+        
+        #alert-box {
+            display: none; padding: 15px; margin-top: 20px; border-radius: 8px;
+            text-align: center; font-weight: bold; animation: blink 0.5s infinite;
+        }
+
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<audio id="alarm-sound" loop>
+    <source src="https://actions.google.com/sounds/v1/alarms/emergency_it_is_an_emergency.ogg" type="audio/ogg">
+    <source src="https://www.soundjay.com/buttons/beep-01a.mp3" type="audio/mpeg">
+</audio>
+
+<div class="container">
+    <header>
+        <div>
+            <h1 style="margin:0;">SMART FLOOD SENSOR SYSTEM</h1>
+            <p style="margin:0;">Project by: <strong>John Philip Tiwana (BSIT 2-4)</strong></p>
+        </div>
+        <div id="live-clock">00:00:00</div>
+    </header>
+
+    <div id="alert-box"></div>
+
+    <div class="dashboard">
+        <div class="card">
+            <h3>Drainage System Sensor (Live)</h3>
+            <div class="drainage-container">
+                <div id="water" class="water-level" style="height: 20%;"></div>
+                <div id="status-badge" class="sensor-tag" style="background: var(--safe); color: white;">SAFE</div>
+            </div>
+            <p>Current Water Depth: <span id="depth-text">20</span>%</p>
+            <div style="margin-top: 15px;">
+                <button class="btn btn-test" onclick="simulateRain()">Simulate Heavy Rain</button>
+                <button class="btn btn-reset" onclick="resetSystem()">Clear Waterways</button>
+            </div>
+            <small>*Ensure volume is up and you allow notifications.</small>
+        </div>
+
+        <div class="card">
+            <h3>Solutions Summary</h3>
+            <ul style="padding-left: 20px;">
+                <li><strong>Infrastructure:</strong> Build improved drainage systems.</li>
+                <li><strong>Waste Mgmt:</strong> Block debris from entering waterways.</li>
+                <li><strong>Environment:</strong> Plant more trees to absorb runoff.</li>
+                <li><strong>Early Warning:</strong> Automated Siren alerts via sensors.</li>
+            </ul>
+            <hr>
+            <h4>Map Legend</h4>
+            <div style="display: flex; gap: 10px;">
+                <div style="background: var(--danger); width: 20px; height: 20px;"></div> Critical (85%+)
+                <div style="background: var(--warning); width: 20px; height: 20px;"></div> Warning (60%)
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let waterHeight = 20;
+    let alarmPlaying = false;
+    const waterEl = document.getElementById('water');
+    const depthText = document.getElementById('depth-text');
+    const statusBadge = document.getElementById('status-badge');
+    const alertBox = document.getElementById('alert-box');
+    const alarmSound = document.getElementById('alarm-sound');
+
+    // Request Notification Permission on Load
+    if (Notification.permission !== "granted") {
+        Notification.requestPermission();
+    }
+
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('live-clock').innerText = now.toLocaleTimeString();
+    }
+    setInterval(updateClock, 1000);
+
+    function simulateRain() {
+        if (waterHeight < 100) {
+            waterHeight += 15;
+            updateUI();
+        }
+    }
+
+    function resetSystem() {
+        waterHeight = 20;
+        alarmSound.pause();
+        alarmSound.currentTime = 0;
+        alarmPlaying = false;
+        updateUI();
+    }
+
+    function sendNotification(title, body) {
+        if (Notification.permission === "granted") {
+            new Notification(title, { body: body });
+        }
+    }
+
+    function updateUI() {
+        waterEl.style.height = waterHeight + '%';
+        depthText.innerText = waterHeight;
+
+        if (waterHeight >= 85) {
+            statusBadge.innerText = "CRITICAL";
+            statusBadge.style.background = "var(--danger)";
+            waterEl.style.background = "rgba(231, 76, 60, 0.8)";
+            showAlert("EVACUATE IMMEDIATELY: Flood level critical!", "var(--danger)");
+            
+            // Trigger Alarm and Browser Notification
+            if (!alarmPlaying) {
+                alarmSound.play();
+                alarmPlaying = true;
+                sendNotification("FLOOD ALERT", "Level is CRITICAL. Please evacuate!");
+            }
+
+        } else if (waterHeight >= 60) {
+            statusBadge.innerText = "WARNING";
+            statusBadge.style.background = "var(--warning)";
+            waterEl.style.background = "rgba(241, 196, 15, 0.8)";
+            showAlert("WARNING: Water level rising quickly.", "var(--warning)");
+            alarmSound.pause();
+            alarmPlaying = false;
+        } else {
+            statusBadge.innerText = "SAFE";
+            statusBadge.style.background = "var(--safe)";
+            waterEl.style.background = "rgba(52, 152, 219, 0.7)";
+            alertBox.style.display = "none";
+            alarmSound.pause();
+            alarmPlaying = false;
+        }
+    }
+
+    function showAlert(msg, color) {
+        alertBox.innerText = msg;
+        alertBox.style.background = color;
+        alertBox.style.color = (color === "var(--warning)") ? "black" : "white";
+        alertBox.style.display = "block";
+    }
+
+
+    if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("/service-worker.js")
+          .then(() => {
+            console.log("ayos! rehistro as service worker");
+          })
+          .catch((error) => {
+            console.log("Registration failed: ", error);
+          });
+      }
+</script>
+
+</body>
+</html>
