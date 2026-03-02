@@ -65,7 +65,7 @@
 <div class="container">
     <header>
         <div>
-            <h1 style="margin:0;">SMART FLOOD SENSOR SYSTEM</h1>
+            <h1 style="margin:0;">FLOOD SENSOR SYSTEM</h1>
             <p style="margin:0;">Project by: <strong>John Philip Tiwana (BSIT 2-4)</strong></p>
         </div>
         <div id="live-clock">00:00:00</div>
@@ -157,7 +157,6 @@
             waterEl.style.background = "rgba(231, 76, 60, 0.8)";
             showAlert("EVACUATE IMMEDIATELY: Flood level critical!", "var(--danger)");
             
-            // Trigger Alarm and Browser Notification
             if (!alarmPlaying) {
                 alarmSound.play();
                 alarmPlaying = true;
@@ -202,4 +201,5 @@
 </script>
 
 </body>
+
 </html>
