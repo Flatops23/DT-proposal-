@@ -3,208 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
     <title>Flood Monitoring</title>
     <style>
-        :root {
-            --primary: #2c3e50;
-            --accent: #3498db;
-            --danger: #e74c3c;
-            --warning: #f1c40f;
-            --safe: #2ecc71;
-            --bg: #f4f7f6;
-        }
-
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 10px; }
-        .container { max-width: 1000px; margin: auto; }
-        
-        header { 
-            background: var(--primary); color: white; padding: 1rem; 
-            border-radius: 8px; display: flex; flex-direction: column; text-align: center; gap: 10px;
-        }
-
-        /* Desktop Layout */
-        @media (min-width: 768px) {
-            header { flex-direction: row; justify-content: space-between; text-align: left; }
-            .dashboard { grid-template-columns: 1fr 1fr; }
-            body { padding: 20px; }
-        }
-
-        .dashboard { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 15px; }
-        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-
-        .drainage-container {
-            position: relative; height: 180px; width: 100%; 
-            background: #eee; border: 4px solid #7f8c8d; 
-            border-top: none; border-radius: 0 0 40px 40px; overflow: hidden;
-            margin: 10px 0;
-        }
-        
-        .water-level {
-            position: absolute; bottom: 0; width: 100%;
-            background: rgba(52, 152, 219, 0.7);
-            transition: height 0.8s ease-in-out, background 0.5s;
-        }
-
-        .sensor-tag {
-            position: absolute; top: 10px; right: 10px;
-            padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 0.75rem;
-        }
-
-        .btn { 
-            padding: 12px 15px; border: none; border-radius: 4px; cursor: pointer; 
-            font-weight: bold; width: 100%; margin-bottom: 10px; transition: 0.3s;
-        }
-        
-        @media (min-width: 480px) { .btn { width: auto; margin-right: 5px; } }
-
-        .btn-test { background: var(--accent); color: white; }
-        .btn-reset { background: #95a5a6; color: white; }
-        
-        #alert-box {
-            display: none; padding: 15px; margin-top: 15px; border-radius: 8px;
-            text-align: center; font-weight: bold; animation: blink 0.5s infinite;
-        }
-
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+        :root { --primary: #2c3e50; --danger: #e74c3c; --safe: #2ecc71; --bg: #f4f7f6; }
+        body { font-family: sans-serif; background: var(--bg); text-align: center; padding: 10px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        .drainage { height: 150px; background: #eee; border: 4px solid #7f8c8d; border-radius: 0 0 30px 30px; position: relative; overflow: hidden; margin: 20px 0; }
+        .water { position: absolute; bottom: 0; width: 100%; background: #3498db; transition: height 0.5s; }
+        .btn { padding: 15px; width: 100%; margin: 5px 0; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-test { background: var(--primary); color: white; }
     </style>
 </head>
 <body>
 
-<audio id="alarm-sound" loop preload="auto">
-    <source src="https://www.soundjay.com/buttons/beep-01a.mp3" type="audio/mpeg">
-</audio>
-
-<div class="container">
-    <header>
-        <div>
-            <h2 style="margin:0; font-size: 1.4rem;">FLOOD SENSOR SYSTEM</h2>
-            <p style="margin:5px 0 0 0; font-size: 0.9rem;">By: <strong>John Philip Tiwana</strong></p>
+    <h2>FLOOD SENSOR</h2>
+    
+    <div class="card">
+        <div class="drainage">
+            <div id="water" class="water" style="height: 20%;"></div>
         </div>
-        <div id="live-clock" style="font-weight: bold; font-family: monospace;">00:00:00</div>
-    </header>
-
-    <div id="alert-box"></div>
-
-    <div class="dashboard">
-        <div class="card">
-            <h3>Drainage Sensor</h3>
-            <div class="drainage-container">
-                <div id="water" class="water-level" style="height: 20%;"></div>
-                <div id="status-badge" class="sensor-tag" style="background: var(--safe); color: white;">SAFE</div>
-            </div>
-            <p>Depth: <span id="depth-text">20</span>%</p>
-            <div>
-                <button class="btn btn-test" onclick="simulateRain()">Simulate Rain</button>
-                <button class="btn btn-reset" onclick="resetSystem()">Reset System</button>
-            </div>
-            <small style="color: #7f8c8d;">Sound triggers at 85% Critical Level.</small>
-        </div>
-
-        <div class="card">
-            <h3>Solutions</h3>
-            <ul style="padding-left: 20px; line-height: 1.6;">
-                <li><strong>Infrastructure:</strong> Modern drainage.</li>
-                <li><strong>Waste:</strong> Debris blocking.</li>
-                <li><strong>Environment:</strong> Reforestation.</li>
-                <li><strong>Alerts:</strong> Real-time sensors.</li>
-            </ul>
-            <hr>
-            <h4>Legend</h4>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="background: var(--danger); width: 15px; height: 15px; border-radius: 2px;"></div> Critical (85%+)
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="background: var(--warning); width: 15px; height: 15px; border-radius: 2px;"></div> Warning (60%)
-                </div>
-            </div>
-        </div>
+        <h3 id="status">STATUS: SAFE</h3>
+        <p>Level: <span id="level-text">20</span>%</p>
+        
+        <button class="btn btn-test" onclick="simulate()">Simulate Heavy Rain</button>
+        <button class="btn" onclick="reset()">Clear Drains</button>
     </div>
-</div>
 
-<script>
-    let waterHeight = 20;
-    const waterEl = document.getElementById('water');
-    const depthText = document.getElementById('depth-text');
-    const statusBadge = document.getElementById('status-badge');
-    const alertBox = document.getElementById('alert-box');
-    const alarmSound = document.getElementById('alarm-sound');
+    <audio id="alarm" loop>
+        <source src="https://www.soundjay.com/buttons/beep-01a.mp3" type="audio/mpeg">
+    </audio>
 
-    function updateClock() {
-        const now = new Date();
-        document.getElementById('live-clock').innerText = now.toLocaleTimeString();
-    }
-    setInterval(updateClock, 1000);
+    <script>
+        let level = 20;
+        const alarm = document.getElementById('alarm');
 
-    function simulateRain() {
-        // Essential: Calling .play() and immediately pausing it on the first click
-        // helps "unlock" the audio for the browser's security policy.
-        if (waterHeight === 20) {
-            alarmSound.play().then(() => alarmSound.pause()).catch(e => console.log("Audio unlock pending..."));
+        function simulate() {
+            // This 'unlocks' the sound so it can play later
+            alarm.play().then(() => {
+                alarm.pause(); 
+            }).catch(e => console.log("Waiting for user interaction"));
+
+            if (level < 100) {
+                level += 20;
+                updateUI();
+            }
         }
 
-        if (waterHeight < 100) {
-            waterHeight += 15;
+        function reset() {
+            level = 20;
+            alarm.pause();
+            alarm.currentTime = 0;
             updateUI();
         }
-    }
 
-    function resetSystem() {
-        waterHeight = 20;
-        alarmSound.pause();
-        alarmSound.currentTime = 0;
-        updateUI();
-    }
-
-    function updateUI() {
-        waterEl.style.height = waterHeight + '%';
-        depthText.innerText = waterHeight;
-
-        if (waterHeight >= 85) {
-            statusBadge.innerText = "CRITICAL";
-            statusBadge.style.background = "var(--danger)";
-            waterEl.style.background = "rgba(231, 76, 60, 0.8)";
-            showAlert("EVACUATE: Flood level critical!", "var(--danger)");
+        function updateUI() {
+            document.getElementById('water').style.height = level + '%';
+            document.getElementById('level-text').innerText = level;
             
-            alarmSound.play().catch(error => {
-                console.log("Audio playback blocked. Click the page first.");
-            });
-
-        } else if (waterHeight >= 60) {
-            statusBadge.innerText = "WARNING";
-            statusBadge.style.background = "var(--warning)";
-            waterEl.style.background = "rgba(241, 196, 15, 0.8)";
-            showAlert("WARNING: Level rising.", "var(--warning)");
-            alarmSound.pause();
-        } else {
-            statusBadge.innerText = "SAFE";
-            statusBadge.style.background = "var(--safe)";
-            waterEl.style.background = "rgba(52, 152, 219, 0.7)";
-            alertBox.style.display = "none";
-            alarmSound.pause();
+            if (level >= 80) {
+                document.getElementById('status').innerText = "STATUS: CRITICAL";
+                document.getElementById('status').style.color = "red";
+                alarm.play(); // This will work now because you clicked 'Simulate'
+            } else {
+                document.getElementById('status').innerText = "STATUS: SAFE";
+                document.getElementById('status').style.color = "green";
+                alarm.pause();
+            }
         }
-    }
 
-    function showAlert(msg, color) {
-        alertBox.innerText = msg;
-        alertBox.style.background = color;
-        alertBox.style.color = (color === "var(--warning)") ? "black" : "white";
-        alertBox.style.display = "block";
-    }
-
-    if ("serviceWorker" in navigator) {
-        navigator.serviceWorker
-          .register("/service-worker.js")
-          .then(() => {
-            console.log("ayos! rehistro as service worker");
-          })
-          .catch((error) => {
-            console.log("Registration failed: ", error);
-          });
-      }
-</script>
-
+        // Register Service Worker for Icon/Install support
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("service-worker.js");
+        }
+    </script>
 </body>
-
 </html>
-
