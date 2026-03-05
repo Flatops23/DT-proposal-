@@ -10,110 +10,124 @@
 </head>
 <body>
 
-<audio id="aud" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" loop></audio>
+    <h2>FLOOD MONITOR</h2>
+    <div id="warn"> EVACUATE NOW! </div>
 
-<div class="container">
-    <header>
-        <div>
-            <h2 style="margin:0; font-size: 1.4rem;">FLOOD SENSOR SYSTEM</h2>
-            <p style="margin:5px 0 0 0; font-size: 0.9rem;">By: <strong>John Philip Tiwana</strong></p>
-        </div>
-        <div id="clock" style="font-weight: bold; font-family: monospace;">00:00:00</div>
-    </header>
-
-    <div id="msg-box"></div>
-
-    <div class="box-layout">
-        <div class="card">
-            <h3>Drainage Sensor</h3>
-            <div class="drain-ui">
-                <div id="water" class="lvl-bar" style="height: 20%;"></div>
-                <div id="stat" class="tag" style="background: var(--safe); color: white;">SAFE</div>
-            </div>
-            <p>Depth: <span id="num">20</span>%</p>
-            <div>
-                <button class="btn btn-test" onclick="add()">Simulate Rain</button>
-                <button class="btn btn-clr" onclick="reset()">Refresh</button>
-            </div>
+    <div class="wrap">
+        <div class="box">
+            <h3>Sensor</h3>
+            <div id="drn"><div id="wtr" style="height: 20%;"></div></div>
+            <p>Lvl: <span id="txt-l">20</span>% | <span id="txt-s">SAFE</span></p>
+            <button class="btn b-add" onclick="add()">+ Rain</button>
+            <button class="btn" onclick="rst()">Reset</button>
         </div>
 
-        <div class="card">
-            <h3>Solutions</h3>
-            <ul style="padding-left: 20px; line-height: 1.6;">
-                <li><strong>Infrastructure:</strong> Modern drainage.</li>
-                <li><strong>Waste:</strong> Debris blocking.</li>
-                <li><strong>Environment:</strong> Reforestation.</li>
-                <li><strong>Alerts:</strong> Real-time sensors.</li>
-            </ul>
+        <div class="box">
+            <h3>History</h3>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Time</th><th>%</th><th>Note</th><th>Action</th></tr></thead>
+                    <tbody id="tb"></tbody>
+                </table>
+            </div>
+            <button class="btn b-clr" style="margin-top:10px;" onclick="clr()">Clear All</button>
         </div>
     </div>
-</div>
 
-<script>
-    let h = 20;
-    const w = document.getElementById('water');
-    const n = document.getElementById('num');
-    const s = document.getElementById('stat');
-    const b = document.getElementById('msg-box');
-    const aud = document.getElementById('aud');
+    <script>
+        let lvl = 20;
+        let ctx = null;
+        let s_int = null;
 
-    function getTime() {
-        const d = new Date();
-        document.getElementById('clock').innerText = d.toLocaleTimeString();
-    }
-    setInterval(getTime, 1000);
+        window.onload = () => { show(); };
 
-    
-
-    function add() {
-        if (h < 100) {
-            h += 15;
-            refresh();
+        function add() {
+            if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+            if (lvl < 100) {
+                lvl += 20;
+                upd();
+                if (lvl >= 80) save(lvl, "DANGER");
+            }
         }
-    }
 
-    function reset() {
-        h = 20;
-        aud.pause();
-        aud.currentTime = 0;
-        refresh();
-    }
+        function upd() {
+            const w = document.getElementById('wtr');
+            const tl = document.getElementById('txt-l');
+            const ts = document.getElementById('txt-s');
+            const wn = document.getElementById('warn');
 
-    function refresh() {
-        w.style.height = h + '%';
-        n.innerText = h;
+            w.style.height = lvl + '%';
+            tl.innerText = lvl;
 
-        if (h >= 85) {
-            s.innerText = "CRITICAL";
-            s.style.background = "var(--danger)";
-            w.style.background = "rgba(231, 76, 60, 0.8)";
-            show("EVACUATE: Flood level critical!", "var(--danger)");
-            
-            aud.play(); 
-
-        } else if (h >= 60) {
-            s.innerText = "WARNING";
-            s.style.background = "var(--warning)";
-            w.style.background = "rgba(241, 196, 15, 0.8)";
-            show("WARNING: Level rising.", "var(--warning)");
-            aud.pause();
-        } else {
-            s.innerText = "SAFE";
-            s.style.background = "var(--safe)";
-            w.style.background = "rgba(52, 152, 219, 0.7)";
-            b.style.display = "none";
-            aud.pause();
+            if (lvl >= 80) {
+                w.classList.add('crit');
+                ts.innerText = "DANGER";
+                wn.style.display = "block";
+                play();
+            } else {
+                w.classList.remove('crit');
+                ts.innerText = "SAFE";
+                wn.style.display = "none";
+                stop();
+            }
         }
-    }
 
-    function show(txt, c) {
-        b.innerText = txt;
-        b.style.background = c;
-        b.style.color = (c === "var(--warning)") ? "black" : "white";
-        b.style.display = "block";
-    }
+        function save(v, n) {
+            let d = JSON.parse(localStorage.getItem("f_logs")) || [];
+            d.push({id: Date.now(), t: new Date().toLocaleTimeString(), v: v + "%", n: n});
+            localStorage.setItem("f_logs", JSON.stringify(d));
+            show();
+        }
 
-    if ("serviceWorker" in navigator) {
+        function show() {
+            let d = JSON.parse(localStorage.getItem("f_logs")) || [];
+            let b = document.getElementById("tb");
+            b.innerHTML = "";
+            d.forEach(i => {
+                b.innerHTML += `<tr><td>${i.t}</td><td>${i.v}</td><td>${i.n}</td>
+                    <td><button class="btn" onclick="edt(${i.id})">Edit</button>
+                    <button class="btn" onclick="del(${i.id})">X</button></td></tr>`;
+            });
+        }
+
+        function edt(id) {
+            let d = JSON.parse(localStorage.getItem("f_logs"));
+            let m = prompt("New note:");
+            if (m) {
+                let x = d.findIndex(l => l.id === id);
+                d[x].n = m;
+                localStorage.setItem("f_logs", JSON.stringify(d));
+                show();
+            }
+        }
+
+        function del(id) {
+            let d = JSON.parse(localStorage.getItem("f_logs"));
+            localStorage.setItem("f_logs", JSON.stringify(d.filter(l => l.id !== id)));
+            show();
+        }
+
+        function clr() { if(confirm("Clear?")) { localStorage.removeItem("f_logs"); show(); } }
+
+        function rst() { lvl = 20; upd(); }
+
+        function play() {
+            if (s_int) return;
+            s_int = setInterval(() => {
+                let o = ctx.createOscillator();
+                let g = ctx.createGain();
+                o.type = "sawtooth";
+                o.frequency.setValueAtTime(400, ctx.currentTime);
+                o.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.4);
+                g.gain.setValueAtTime(0.05, ctx.currentTime);
+                o.connect(g); g.connect(ctx.destination);
+                o.start(); o.stop(ctx.currentTime + 0.4);
+            }, 500);
+        }
+
+        function stop() { clearInterval(s_int); s_int = null; }
+        
+        if ("serviceWorker" in navigator) {
         navigator.serviceWorker
           .register("/service-worker.js")
           .then(() => {
@@ -123,8 +137,7 @@
             console.log("Registration failed: ", error);
           });
       }
-</script>
-
+    </script>
 </body>
 </html>
 
